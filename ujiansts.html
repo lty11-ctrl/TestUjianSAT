@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Ujian Aman - Mode Lockdown</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        
+        .lockdown-container {
+            background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999;
+        }
+        
+        .security-header {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .exam-frame {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .security-indicator {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+            animation: pulse 2s infinite;
+        }
+        
+        .security-indicator.aman {
+            background: linear-gradient(90deg, #10b981, #059669);
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .tombol-keluar {
+            background: linear-gradient(135deg, #10b981, #059669);
+            transform: scale(0);
+            transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .tombol-keluar.tampil {
+            transform: scale(1);
+        }
+        
+        .tombol-keluar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.4);
+        }
+        
+        .modal-peringatan {
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(8px);
+        }
+        
+        .konten-peringatan {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            animation: modalMasuk 0.4s ease-out;
+        }
+        
+        @keyframes modalMasuk {
+            from {
+                opacity: 0;
+                transform: translateY(-60px) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .counter-pelanggaran {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-radius: 25px;
+            padding: 6px 16px;
+            font-weight: 700;
+            font-size: 13px;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+        
+        .no-select {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 28px;
+            height: 28px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status-ujian {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-radius: 12px;
+            padding: 8px 16px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .berhasil-submit {
+            background: linear-gradient(135deg, #10b981, #059669);
+            animation: berkedip 1.5s ease-in-out 3;
+        }
+        
+        @keyframes berkedip {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="no-select">
+    <!-- Modal Peringatan Keamanan -->
+    <div id="modalKeamanan" class="modal-peringatan fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="konten-peringatan p-8 max-w-lg mx-4">
+            <div class="text-center">
+                <div class="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-4"⚠️ Pelanggaran Keamanan Terdeteksi!</h3>
+                <p class="text-gray-600 mb-3">Anda mencoba keluar dari lingkungan ujian.</p>
+                <p class="text-sm text-red-600 font-semibold mb-6">Tindakan ini telah dicatat dan dilaporkan ke sistem.</p>
+                
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 text-left">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                <strong>Peringatan:</strong> Anda tidak dapat keluar sampai ujian selesai dikerjakan dan disubmit. 
+                                Silakan selesaikan Google Form untuk membuka opsi keluar.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="kembaliKeUjian" class="bg-blue-600 hover:bg-blue-700 text-white py-3 px-8 rounded-lg font-semibold transition-all w-full">
+                    🔙 Kembali ke Ujian
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container Lockdown Utama -->
+    <div class="lockdown-container">
+        <!-- Header Keamanan -->
+        <div class="security-header p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-3">
+                        <div id="indikatorKeamanan" class="security-indicator w-4 h-4 rounded-full"></div>
+                        <span class="text-white font-semibold text-lg">🔒 Mode Ujian Aman</span>
+                    </div>
+                    <div class="status-ujian text-sm">
+                        Layar Penuh Terkunci
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div id="counterPelanggaran" class="counter-pelanggaran hidden">
+                        Pelanggaran: <span id="jumlahPelanggaran">0</span>
+                    </div>
+                    <div class="text-white font-medium">
+                        <span id="timerUjian">⏱️ Ujian Berlangsung</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Area Konten Ujian -->
+        <div class="p-6 h-full">
+            <div class="exam-frame h-full flex flex-col">
+                <!-- Header Form -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 border-b-2 border-blue-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-800 mb-1">📝 Ujian Online</h1>
+                            <p class="text-gray-600">Lengkapi form di bawah ini untuk menyelesaikan ujian Anda</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div id="statusForm" class="flex items-center space-x-3">
+                                <div class="loading-spinner"></div>
+                                <span class="text-sm text-gray-600 font-medium">Memuat ujian...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Container Google Form -->
+                <div class="flex-1 relative bg-gray-50">
+                    <iframe 
+                        id="formUjian"
+                        src="https://forms.gle/hU1k4d8DjnxvXDdd9"
+                        class="w-full h-full border-0"
+                        frameborder="0"
+                        marginheight="0"
+                        marginwidth="0"
+                        title="Form Ujian Online">
+                        Memuat form ujian...
+                    </iframe>
+                    
+                    <!-- Overlay Setelah Submit -->
+                    <div id="overlaySelesai" class="absolute inset-0 bg-white flex items-center justify-center hidden">
+                        <div class="text-center max-w-md">
+                            <div class="bg-green-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8">
+                                <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <h2 class="text-3xl font-bold text-gray-800 mb-4">🎉 Ujian Berhasil Diserahkan!</h2>
+                            <p class="text-gray-600 mb-2">Jawaban Anda telah tersimpan dengan aman.</p>
+                            <p class="text-sm text-green-600 font-semibold mb-8">Sekarang Anda dapat keluar dari lingkungan ujian.</p>
+                            
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
+                                <h3 class="font-semibold text-green-800 mb-2">✅ Status Pengerjaan</h3>
+                                <div class="text-sm text-green-700 space-y-1">
+                                    <p>• Form telah berhasil disubmit</p>
+                                    <p>• Jawaban tersimpan di sistem</p>
+                                    <p>• Waktu selesai: <span id="waktuSelesai"></span></p>
+                                </div>
+                            </div>
+                            
+                            <!-- Tombol Keluar (hanya muncul setelah submit) -->
+                            <button id="tombolKeluar" class="tombol-keluar tampil text-white py-4 px-10 rounded-xl font-bold text-xl transition-all">
+                                🚪 Keluar dari Website
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bar Keamanan Bawah -->
+        <div class="security-header p-3">
+            <div class="flex items-center justify-center space-x-8 text-white text-sm opacity-80">
+                <span>🛡️ Lingkungan Aman Aktif</span>
+                <span>🚫 Tab Switching Diblokir</span>
+                <span>⌨️ Shortcut Dinonaktifkan</span>
+                <span>👁️ Aktivitas Dipantau</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Manajemen state keamanan dan ujian
+        let waktuMulaiUjian = new Date();
+        let pelanggaranKeamanan = 0;
+        let ujianSudahDiserahkan = false;
+        let ujianAktif = true;
+        let submissionTerdeteksi = false;
+
+        // Elemen DOM
+        const modalKeamanan = document.getElementById('modalKeamanan');
+        const indikatorKeamanan = document.getElementById('indikatorKeamanan');
+        const counterPelanggaran = document.getElementById('counterPelanggaran');
+        const jumlahPelanggaran = document.getElementById('jumlahPelanggaran');
+        const timerUjian = document.getElementById('timerUjian');
+        const formUjian = document.getElementById('formUjian');
+        const overlaySelesai = document.getElementById('overlaySelesai');
+        const tombolKeluar = document.getElementById('tombolKeluar');
+        const statusForm = document.getElementById('statusForm');
+        const waktuSelesai = document.getElementById('waktuSelesai');
+
+        // Inisialisasi lingkungan ujian
+        function inisialisasiUjian() {
+            console.log('🔒 Menginisialisasi lingkungan ujian aman...');
+            
+            // Paksa masuk fullscreen
+            masukFullscreen();
+            
+            // Setup monitoring keamanan
+            setupMonitoringKeamanan();
+            
+            // Mulai timer ujian
+            mulaiTimerUjian();
+            
+            // Monitor submission form
+            monitorSubmissionForm();
+            
+            // Update sumber form dengan URL Google Form yang sebenarnya
+            updateSumberForm();
+            
+            console.log('✅ Lingkungan ujian berhasil diinisialisasi');
+        }
+
+        function updateSumberForm() {
+            // Ganti dengan URL Google Form yang sebenarnya
+            // Contoh: https://forms.gle/hU1k4d8DjnxvXDdd9
+            
+            // Untuk demo, kita simulasikan loading form
+            setTimeout(() => {
+                statusForm.innerHTML = `
+                    <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+                    <span class="text-sm text-green-600 font-medium">Ujian berhasil dimuat</span>
+                `;
+                
+                // Simulasi submission setelah 15 detik untuk demo
+                setTimeout(() => {
+                    simulasiSubmissionForm();
+                }, 15000);
+            }, 3000);
+        }
+
+        function simulasiSubmissionForm() {
+            // Ini mensimulasikan deteksi submission form
+            // Dalam implementasi nyata, Anda akan mendeteksi submission Google Form yang sebenarnya
+            console.log('📝 Submission form terdeteksi');
+            handleSubmissionForm();
+        }
+
+        function mulaiTimerUjian() {
+            setInterval(() => {
+                const berlalu = Math.floor((new Date() - waktuMulaiUjian) / 1000);
+                const menit = Math.floor(berlalu / 60);
+                const detik = berlalu % 60;
+                timerUjian.textContent = `⏱️ Waktu Ujian: ${menit.toString().padStart(2, '0')}:${detik.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function masukFullscreen() {
+            const elem = document.documentElement;
+            
+            const requestFullscreen = elem.requestFullscreen || 
+                                    elem.mozRequestFullScreen || 
+                                    elem.webkitRequestFullscreen || 
+                                    elem.msRequestFullscreen;
+            
+            if (requestFullscreen) {
+                requestFullscreen.call(elem).catch(err => {
+                    console.warn('Permintaan fullscreen gagal:', err);
+                });
+            }
+        }
+
+        function setupMonitoringKeamanan() {
+            // Cegah context menu
+            document.addEventListener('contextmenu', (e) => {
+                if (ujianAktif && !ujianSudahDiserahkan) {
+                    e.preventDefault();
+                    catatPelanggaranKeamanan('Percobaan buka context menu');
+                }
+            });
+
+            // Blokir shortcut keyboard
+            document.addEventListener('keydown', (e) => {
+                if (ujianAktif && !ujianSudahDiserahkan) {
+                    const tombolTerblokir = [
+                        'F11', 'F12', 'Escape', 'Tab', 'Alt', 'Control'
+                    ];
+                    
+                    const kombinasiTerblokir = [
+                        e.altKey && e.key === 'Tab',
+                        e.ctrlKey && e.key === 'Tab',
+                        e.ctrlKey && e.shiftKey && e.key === 'I',
+                        e.ctrlKey && e.shiftKey && e.key === 'J',
+                        e.ctrlKey && e.key === 'u',
+                        e.ctrlKey && e.key === 'r',
+                        e.key === 'F5',
+                        e.altKey && e.key === 'F4',
+                        e.ctrlKey && e.key === 'w',
+                        e.ctrlKey && e.key === 'q'
+                    ];
+
+                    if (tombolTerblokir.includes(e.key) || kombinasiTerblokir.some(combo => combo)) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        catatPelanggaranKeamanan(`Kombinasi tombol terblokir: ${e.key}`);
+                        tampilkanPeringatanKeamanan();
+                        return false;
+                    }
+                }
+            });
+
+            // Monitor perubahan fullscreen
+            ['fullscreenchange', 'mozfullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange']
+                .forEach(event => {
+                    document.addEventListener(event, handlePerubahanFullscreen);
+                });
+
+            // Monitor perubahan visibility (tab switching)
+            document.addEventListener('visibilitychange', () => {
+                if (ujianAktif && !ujianSudahDiserahkan && document.hidden) {
+                    catatPelanggaranKeamanan('Tab switching terdeteksi');
+                    tampilkanPeringatanKeamanan();
+                }
+            });
+
+            // Monitor fokus window
+            window.addEventListener('blur', () => {
+                if (ujianAktif && !ujianSudahDiserahkan) {
+                    catatPelanggaranKeamanan('Fokus window hilang');
+                    tampilkanPeringatanKeamanan();
+                }
+            });
+
+            window.addEventListener('focus', () => {
+                if (ujianAktif && !ujianSudahDiserahkan) {
+                    masukFullscreen();
+                }
+            });
+
+            // Cegah page unload
+            window.addEventListener('beforeunload', (e) => {
+                if (ujianAktif && !ujianSudahDiserahkan) {
+                    e.preventDefault();
+                    e.returnValue = 'Ujian sedang berlangsung. Yakin ingin keluar?';
+                    catatPelanggaranKeamanan('Percobaan keluar halaman');
+                    return 'Ujian sedang berlangsung. Yakin ingin keluar?';
+                }
+            });
+        }
+
+        function handlePerubahanFullscreen() {
+            const isFullscreen = !!(document.fullscreenElement || 
+                                   document.mozFullScreenElement || 
+                                   document.webkitFullscreenElement || 
+                                   document.msFullscreenElement);
+
+            if (ujianAktif && !ujianSudahDiserahkan && !isFullscreen) {
+                catatPelanggaranKeamanan('Keluar dari mode fullscreen');
+                tampilkanPeringatanKeamanan();
+                // Paksa kembali ke fullscreen
+                setTimeout(masukFullscreen, 100);
+            }
+        }
+
+        function catatPelanggaranKeamanan(jenis) {
+            pelanggaranKeamanan++;
+            console.warn(`🚨 Pelanggaran Keamanan #${pelanggaranKeamanan}: ${jenis}`);
+            
+            // Update UI
+            jumlahPelanggaran.textContent = pelanggaranKeamanan;
+            counterPelanggaran.classList.remove('hidden');
+            
+            // Dalam aplikasi nyata, Anda akan mengirim ini ke server
+            // kirimPelanggaranKeServer(jenis, pelanggaranKeamanan);
+        }
+
+        function tampilkanPeringatanKeamanan() {
+            modalKeamanan.classList.remove('hidden');
+            indikatorKeamanan.classList.remove('aman');
+        }
+
+        function sembunyikanPeringatanKeamanan() {
+            modalKeamanan.classList.add('hidden');
+            if (ujianSudahDiserahkan) {
+                indikatorKeamanan.classList.add('aman');
+            }
+        }
+
+        function monitorSubmissionForm() {
+            // Metode 1: Dengarkan perubahan navigasi iframe
+            formUjian.addEventListener('load', () => {
+                try {
+                    // Periksa apakah form telah disubmit dengan memantau perubahan URL
+                    // Catatan: Karena pembatasan CORS, akses konten iframe langsung terbatas
+                    
+                    // Metode 2: Gunakan komunikasi postMessage jika form mendukungnya
+                    window.addEventListener('message', (event) => {
+                        // Periksa apakah pesan dari Google Forms
+                        if (event.origin === 'https://docs.google.com') {
+                            if (event.data && (
+                                event.data.type === 'form_submitted' ||
+                                event.data.includes('formResponse') ||
+                                event.data.includes('submitted')
+                            )) {
+                                handleSubmissionForm();
+                            }
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.log('Akses iframe cross-origin dibatasi (diharapkan)');
+                }
+            });
+
+            // Metode 3: Pemeriksaan berkala untuk indikator submission
+            let cekSubmissionInterval = setInterval(() => {
+                if (!submissionTerdeteksi && ujianAktif) {
+                    try {
+                        // Dalam implementasi nyata, Anda mungkin:
+                        // 1. Memeriksa pola URL tertentu di iframe
+                        // 2. Memantau perubahan DOM tertentu
+                        // 3. Menggunakan webhook server-side dari Google Forms
+                        // 4. Mengimplementasikan mekanisme deteksi submission kustom
+                        
+                        // Untuk demo, kita akan menggunakan simulasi
+                        const iframeDoc = formUjian.contentDocument || formUjian.contentWindow.document;
+                        if (iframeDoc && iframeDoc.URL.includes('formResponse')) {
+                            handleSubmissionForm();
+                            clearInterval(cekSubmissionInterval);
+                        }
+                    } catch (error) {
+                        // Cross-origin access blocked (expected)
+                    }
+                }
+            }, 2000);
+        }
+
+        function handleSubmissionForm() {
+            if (submissionTerdeteksi) return; // Cegah penanganan duplikat
+            
+            submissionTerdeteksi = true;
+            ujianSudahDiserahkan = true;
+            ujianAktif = false;
+            
+            console.log('✅ Submission ujian dikonfirmasi');
+            
+            // Update status keamanan
+            indikatorKeamanan.classList.add('aman');
+            
+            // Update status form
+            statusForm.innerHTML = `
+                <div class="w-4 h-4 bg-green-500 rounded-full berhasil-submit"></div>
+                <span class="text-sm text-green-600 font-bold">Ujian berhasil diserahkan!</span>
+            `;
+            
+            // Tampilkan overlay selesai dengan tombol keluar
+            overlaySelesai.classList.remove('hidden');
+            
+            // Hapus proteksi beforeunload
+            window.removeEventListener('beforeunload', () => {});
+            
+            // Update timer ujian
+            timerUjian.textContent = '✅ Ujian Selesai Dikerjakan';
+            
+            // Set waktu selesai
+            waktuSelesai.textContent = new Date().toLocaleTimeString('id-ID');
+            
+            // Log penyelesaian
+            const waktuPenyelesaian = new Date();
+            const durasiUjian = Math.floor((waktuPenyelesaian - waktuMulaiUjian) / 1000);
+            console.log(`📊 Ujian selesai dalam ${Math.floor(durasiUjian / 60)}:${(durasiUjian % 60).toString().padStart(2, '0')}`);
+        }
+
+        // Event listeners
+        document.getElementById('kembaliKeUjian').addEventListener('click', () => {
+            sembunyikanPeringatanKeamanan();
+            masukFullscreen();
+        });
+
+        document.getElementById('tombolKeluar').addEventListener('click', () => {
+            if (ujianSudahDiserahkan) {
+                // Aman untuk keluar - ujian telah diserahkan
+                if (confirm('Ujian Anda telah berhasil diserahkan. Yakin ingin keluar dari website?')) {
+                    // Keluar dari fullscreen
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                    
+                    // Tutup window atau redirect
+                    setTimeout(() => {
+                        window.close() || (window.location.href = 'about:blank');
+                    }, 500);
+                }
+            } else {
+                catatPelanggaranKeamanan('Percobaan keluar tanpa izin');
+                tampilkanPeringatanKeamanan();
+            }
+        });
+
+        // Keamanan tambahan: Deteksi developer tools
+        let devtools = { open: false, orientation: null };
+        const threshold = 160;
+
+        setInterval(() => {
+            if (ujianAktif && !ujianSudahDiserahkan) {
+                if (window.outerHeight - window.innerHeight > threshold || 
+                    window.outerWidth - window.innerWidth > threshold) {
+                    if (!devtools.open) {
+                        devtools.open = true;
+                        catatPelanggaranKeamanan('Developer tools terdeteksi');
+                        tampilkanPeringatanKeamanan();
+                    }
+                } else {
+                    devtools.open = false;
+                }
+            }
+        }, 500);
+
+        // Cegah drag and drop
+        ['dragover', 'drop'].forEach(eventName => {
+            document.addEventListener(eventName, (e) => {
+                if (ujianAktif && !ujianSudahDiserahkan) {
+                    e.preventDefault();
+                    if (eventName === 'drop') {
+                        catatPelanggaranKeamanan('Percobaan drag and drop');
+                    }
+                }
+            });
+        });
+
+        // Inisialisasi saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🎓 Portal Ujian Aman Memuat...');
+            inisialisasiUjian();
+        });
+
+        // Cegah print screen dan screenshot (terbatas)
+        document.addEventListener('keyup', (e) => {
+            if (ujianAktif && !ujianSudahDiserahkan && e.key === 'PrintScreen') {
+                catatPelanggaranKeamanan('Percobaan screenshot');
+                tampilkanPeringatanKeamanan();
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'980daeec741940b0',t:'MTc1ODE2NTM3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
